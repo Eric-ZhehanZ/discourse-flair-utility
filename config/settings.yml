@@ -1,0 +1,10 @@
+flair_utility:
+  flair_utility_enabled:
+    default: false
+    client: true
+  flair_utility_hide_user_flair_picker:
+    default: false
+    client: true
+  flair_utility_auto_assign_rules:
+    default: ""
+    type: text

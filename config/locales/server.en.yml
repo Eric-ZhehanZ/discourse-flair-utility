@@ -1,0 +1,5 @@
+en:
+  site_settings:
+    flair_utility_enabled: "Enable the Flair Utility plugin"
+    flair_utility_hide_user_flair_picker: "Hide the flair picker on user profile preferences (prevents users from changing their own flair)"
+    flair_utility_auto_assign_rules: "Priority-ordered group slugs for automatic flair assignment. First matching group wins. One per line. Example: staff|trust_level_4|moderators"
