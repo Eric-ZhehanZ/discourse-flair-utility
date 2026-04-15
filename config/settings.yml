@@ -6,5 +6,8 @@ flair_utility:
     default: false
     client: true
   flair_utility_auto_assign_rules:
+    type: group_list
+    list_type: compact
     default: ""
-    type: text
+    allow_any: false
+    refresh: true

@@ -33,15 +33,29 @@ after_initialize do
   end
 
   module ::DiscourseFlairUtility
+    def self.rule_group_ids
+      SiteSetting.flair_utility_auto_assign_rules
+        .split("|")
+        .map(&:strip)
+        .reject(&:empty?)
+        .map(&:to_i)
+    end
+
+    def self.rule_groups
+      ids = rule_group_ids
+      return [] if ids.empty?
+      # Preserve priority order from the setting
+      groups_by_id = Group.where(id: ids).index_by(&:id)
+      ids.filter_map { |id| groups_by_id[id] }
+    end
+
     def self.assign_flair_for_user(user)
-      rules = SiteSetting.flair_utility_auto_assign_rules.split(/[\r\n|]+/).map(&:strip).reject(&:empty?)
-      return if rules.empty?
+      groups = rule_groups
+      return if groups.empty?
 
       user_group_ids = user.group_users.pluck(:group_id)
 
-      rules.each do |group_slug|
-        group = Group.find_by(name: group_slug)
-        next unless group
+      groups.each do |group|
         next unless user_group_ids.include?(group.id)
         next unless group.flair_icon.present? || group.flair_upload_id.present?
 
@@ -52,24 +66,22 @@ after_initialize do
       end
 
       # No matching group with flair found — clear flair if it was set by a rule group
-      rule_group_ids = rules.filter_map { |slug| Group.find_by(name: slug)&.id }
-      if rule_group_ids.include?(user.flair_group_id)
+      if groups.map(&:id).include?(user.flair_group_id)
         user.update_column(:flair_group_id, nil)
       end
     end
 
     def self.assign_flair_for_all_users
-      rules = SiteSetting.flair_utility_auto_assign_rules.split(/[\r\n|]+/).map(&:strip).reject(&:empty?)
-      return if rules.empty?
+      groups = rule_groups
+      return if groups.empty?
 
-      rule_groups = rules.filter_map { |slug| Group.find_by(name: slug) }
-      return if rule_groups.empty?
+      managed_group_ids = groups.map(&:id)
 
       User.joins(:group_users).distinct.find_each do |user|
         user_group_ids = user.group_users.pluck(:group_id)
         assigned = false
 
-        rule_groups.each do |group|
+        groups.each do |group|
           next unless user_group_ids.include?(group.id)
           next unless group.flair_icon.present? || group.flair_upload_id.present?
 
@@ -81,8 +93,7 @@ after_initialize do
         end
 
         unless assigned
-          rule_group_ids = rule_groups.map(&:id)
-          if rule_group_ids.include?(user.flair_group_id)
+          if managed_group_ids.include?(user.flair_group_id)
             user.update_column(:flair_group_id, nil)
           end
         end
