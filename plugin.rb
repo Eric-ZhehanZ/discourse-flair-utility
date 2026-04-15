@@ -32,6 +32,13 @@ after_initialize do
     end
   end
 
+  # Re-apply all flair when the rules setting changes
+  DiscourseEvent.on(:site_setting_changed) do |name, _old, _new|
+    if name.to_s == "flair_utility_auto_assign_rules" && SiteSetting.flair_utility_enabled
+      DiscourseFlairUtility.assign_flair_for_all_users
+    end
+  end
+
   module ::DiscourseFlairUtility
     def self.rule_group_ids
       SiteSetting.flair_utility_auto_assign_rules
